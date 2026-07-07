@@ -1,0 +1,15 @@
+# Saved Playwright sessions contain live auth cookies — never commit them.
+.auth/
+*.storage.json
+
+# Diagnostic output (rendered HTML / screenshots may contain personal data)
+debug/
+
+# Local env
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
