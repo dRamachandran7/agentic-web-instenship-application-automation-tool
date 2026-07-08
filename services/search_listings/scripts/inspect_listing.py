@@ -80,7 +80,7 @@ INVENTORY_JS = """
   blocks.sort((a, b) => b.len - a.len);
   // Employer links -> the company name/selector.
   const employerLinks = [];
-  for (const a of document.querySelectorAll('a[href*="/employers/"]')) {
+  for (const a of document.querySelectorAll('a[href*="/e/"]')) {
     employerLinks.push({ href: a.getAttribute('href'), text: trim(a.innerText).slice(0, 60) });
   }
   // Text under key headings -> where location/company detail lives.

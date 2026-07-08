@@ -48,16 +48,17 @@ RESULT_LINK_SELECTOR = (
 # The entire posting (company, title, "At a glance", description, employer info)
 # renders inside this one container. We scope field lookups to it and use its
 # full text as the description, rather than hunting fragile per-field selectors.
-DETAIL_CONTAINER_SELECTOR = '[data-hook="job-details-page"]'
+DETAIL_CONTAINER_SELECTOR = '[data-hook="right-content"]'
 
 # Detail-page fields: each entry is a list of candidate selectors tried in order.
 DETAIL_TITLE_SELECTORS = [f"{DETAIL_CONTAINER_SELECTOR} h1", "h1"]
 DETAIL_COMPANY_SELECTORS = [
     # Handshake exposes no company data-hook; the employer link near the top of
-    # the container is the stable anchor. Container-scoped + :first keeps us off
-    # the "Similar Jobs" / "Alumni" employer links lower on the page.
-    f'{DETAIL_CONTAINER_SELECTOR} a[href*="/employers/"]',
-    'a[href*="/employers/"]',
+    # the container is the stable anchor (employer profile links are /e/<id>).
+    # Container-scoped + :first keeps us off the "Similar Jobs" / "Alumni"
+    # employer links lower on the page.
+    f'{DETAIL_CONTAINER_SELECTOR} a[href*="/e/"]',
+    'a[href*="/e/"]',
 ]
 DETAIL_LOCATION_SELECTORS = [
     # No dedicated location element either — best-effort only. When it misses,
@@ -205,7 +206,7 @@ class HandshakeScraper(Scraper):
 # Uses an unquoted attribute selector to avoid nested-quote escaping.
 _PANEL_SWAPPED_JS = """
 (prev) => {
-  const h = document.querySelector('[data-hook=job-details-page] h1')
+  const h = document.querySelector('[data-hook=right-content] h1')
          || document.querySelector('h1');
   const t = h && h.innerText ? h.innerText.trim() : '';
   return t.length > 0 && t !== prev;
@@ -241,12 +242,17 @@ async def _wait_for_any(page: Page, selectors: list[str]) -> bool:
 
 
 async def _first_text(page: Page, selectors: list[str]) -> str:
-    """Return trimmed innerText of the first selector that matches, else ""."""
+    """Return trimmed innerText of the first matching element with non-empty
+    text, else "".
+
+    Checks every element matching a selector (not just the first DOM match)
+    before moving to the next candidate selector: some selectors match an
+    icon-only element (e.g. a logo link with no text) ahead of the one that
+    actually holds the text in DOM order.
+    """
     for selector in selectors:
-        el = await page.query_selector(selector)
-        if el is None:
-            continue
-        text = (await el.inner_text()).strip()
-        if text:
-            return text
+        for el in await page.query_selector_all(selector):
+            text = (await el.inner_text()).strip()
+            if text:
+                return text
     return ""
