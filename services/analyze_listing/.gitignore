@@ -1,0 +1,8 @@
+# Local env (contains the Groq API key)
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
