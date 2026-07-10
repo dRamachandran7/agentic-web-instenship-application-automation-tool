@@ -41,6 +41,16 @@ personalize_resume → submit_application`) and makes **no** LLM calls.
 All `params` fields are optional. The service returns `401` when the saved
 session is missing/expired — re-run the auth step below.
 
+Every listing returned is also upserted into a shared SQLite store at
+`data/app.db` (repo root), keyed by `listingId` — re-running the same search
+updates the scraped fields without wiping out any `analyze_listing` results
+already attached to that row.
+
+`GET /listings` returns everything saved so far (most recently scraped
+first); `GET /listings/{listingId}` returns one row, 404 if unknown. Both
+include a `values` field (`null` until analyze_listing has run on that
+listing).
+
 `GET /health` reports liveness and whether a saved session exists on disk.
 
 ## Setup

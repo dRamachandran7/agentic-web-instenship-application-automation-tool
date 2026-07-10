@@ -11,11 +11,13 @@ without leaking cookies between concurrent requests.
 
 from __future__ import annotations
 
+import json
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from playwright.async_api import async_playwright
 
+from . import storage
 from .config import settings
 from .models import SearchRequest, SearchResponse
 from .scraper.base import AuthError
@@ -24,6 +26,7 @@ from .scraper.handshake import HandshakeScraper
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    storage.init_db()
     playwright = await async_playwright().start()
     browser = await playwright.chromium.launch(headless=settings.headless)
     app.state.playwright = playwright
@@ -56,4 +59,25 @@ async def search_listings(request: SearchRequest) -> SearchResponse:
         # 401 so the orchestrator can distinguish "re-auth needed" from a
         # transient scrape failure.
         raise HTTPException(status_code=401, detail=str(exc)) from exc
+    storage.save_listings(listings)
     return SearchResponse(listings=listings)
+
+
+def _row_to_dict(row) -> dict[str, object]:
+    d = dict(row)
+    d["values"] = json.loads(d.pop("values_json")) if d.get("values_json") else None
+    return d
+
+
+@app.get("/listings")
+async def list_saved_listings() -> list[dict[str, object]]:
+    """Every listing persisted so far, most recently scraped first."""
+    return [_row_to_dict(row) for row in storage.get_listings()]
+
+
+@app.get("/listings/{listing_id}")
+async def get_saved_listing(listing_id: str) -> dict[str, object]:
+    row = storage.get_listing(listing_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"No saved listing with id {listing_id!r}")
+    return _row_to_dict(row)

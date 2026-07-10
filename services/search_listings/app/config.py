@@ -15,6 +15,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # the app package and, crucially, gitignored — it contains live auth cookies.
 _DEFAULT_STATE = Path(__file__).resolve().parents[1] / ".auth" / "handshake.json"
 
+# Shared SQLite store at the repo root — analyze_listing points at the same
+# file so it can attach analysis results to the rows search_listings writes.
+_DEFAULT_DB = Path(__file__).resolve().parents[3] / "data" / "app.db"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="", extra="ignore")
@@ -34,6 +38,10 @@ class Settings(BaseSettings):
     # --- Search behaviour ---
     # Hard cap on listings returned per request, so we don't paginate forever.
     max_listings: int = 25
+
+    # --- Storage ---
+    # Shared SQLite file where scraped listings are persisted.
+    db_path: Path = _DEFAULT_DB
 
     @property
     def storage_state_path(self) -> Path:
