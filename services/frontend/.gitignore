@@ -1,0 +1,11 @@
+# Local env
+.env
+
+# NiceGUI's local storage/session directory
+.nicegui/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
