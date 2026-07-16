@@ -1,0 +1,11 @@
+# Shared SQLite store (persisted listings + analysis) — local dev data, not code.
+data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Env files may contain API keys/secrets.
+.env
